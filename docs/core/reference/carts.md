@@ -5,7 +5,7 @@
 Carts are a collection of products (or other custom purchasable types) that you
 would like to order. Carts belong to Users (which relate to Customers).
 
-::: tip 
+::: tip
 Cart prices are dynamically calculated and are not stored (unlike Orders).
 :::
 
@@ -16,9 +16,10 @@ Lunar\Models\Cart
 ```
 
 | Field       | Description                                                                     |
-| :---------- | :------------------------------------------------------------------------------ |
+|:------------|:--------------------------------------------------------------------------------|
 | id          | Unique ID for the cart.                                                         |
 | user_id     | Can be `null` for guest users.                                                  |
+| customer_id | Can be `null`.                                                                  |
 | merged_id   | If a cart was merged with another cart, it defines the cart it was merged into. |
 | currency_id | Carts can only be for a single currency.                                        |
 | channel_id  |                                                                                 |
@@ -43,7 +44,7 @@ Lunar\Models\CartLine
 ```
 
 | Field            | Description                                  |
-| :--------------- | :------------------------------------------- |
+|:-----------------|:---------------------------------------------|
 | id               |                                              |
 | cart_id          |                                              |
 | purchasable_type | e.g. `Lunar\Models\ProductVariant`.          |
@@ -83,9 +84,9 @@ $cart->calculate();
 
 This will create a "hydrated" version of your cart with the following:
 
-::: tip 
+::: tip
 All values will return a `Lunar\Datatypes\Price` object. So you have
-access to the following: `value`, `formatted`, `decimal` 
+access to the following: `value`, `formatted`, `decimal`
 :::
 
 ```php
@@ -93,15 +94,25 @@ $cart->total; // The total price value for the cart
 $cart->subTotal; // The cart sub total, excluding tax
 $cart->subTotalDiscounted; // The cart sub total, minus the discount amount.
 $cart->shippingTotal; // The monetary value for the shipping total. (if applicable)
-$cart->taxAmount; // The monetary value for the amount of tax applied.
+$cart->taxTotal; // The monetary value for the amount of tax applied.
 $cart->taxBreakdown; // This is a collection of all taxes applied across all lines.
 $cart->discountTotal; // The monetary value for the discount total.
 $cart->discountBreakdown; // This is a collection of how discounts were calculated
+$cart->shippingSubTotal; // The shipping total, excluding tax.
+$cart->shippingTotal; // The shipping total including tax.
+$cart->shippingBreakdown; // This is a collection of the shipping breakdown for the cart.
 
 foreach ($cart->taxBreakdown as $taxRate) {
     $taxRate->name
     $taxRate->total->value
 }
+
+foreach ($cart->shippingBreakdown->items as $shippingBreakdown) {
+    $shippingBreakdown->name;
+    $shippingBreakdown->identifier;
+    $shippingBreakdown->price->formatted();
+}
+    
 
 foreach ($cart->discountBreakdown as $discountBreakdown) {
     $discountBreakdown->discount_id
@@ -111,7 +122,6 @@ foreach ($cart->discountBreakdown as $discountBreakdown) {
     }
     $discountBreakdown->total->value
 }
-```
 
 foreach ($cart->discountBreakdown as $discountBreakdown) {
     $discountBreakdown->discount_id
@@ -131,6 +141,7 @@ foreach ($cart->lines as $cartLine) {
     $cartLine->taxBreakdown; // This is a collection of all taxes applied across all lines.
     $cartLine->discountTotal; // The monetary value for the discount total.
 }
+
 ```
 
 ## Modifying Carts
@@ -154,7 +165,6 @@ shipping address on the cart, which will then be used when we calculate which
 tax breakdowns should be applied.
 
 ```php
-
 $shippingAddress = [
     'country_id' => null,
     'title' => null,
@@ -194,9 +204,9 @@ $cart->setBillingAddress(
 
 ## Cart Session Manager
 
-::: tip 
+::: tip
 The cart session manager is useful if you're building a traditional
-Laravel storefront which makes use of sessions. 
+Laravel storefront which makes use of sessions.
 :::
 
 When building a store, you're going to want an easy way to fetch the cart for
@@ -209,7 +219,7 @@ have to keep reinventing the wheel.
 Configuration for your cart is handled in `lunar/cart.php`
 
 | Field         | Description                                                                            | Default      |
-| :------------ | :------------------------------------------------------------------------------------- | :----------- |
+|:--------------|:---------------------------------------------------------------------------------------|:-------------|
 | `session_key` | What key to use when storing the cart id in the session                                | `lunar_cart` |
 | `auto_create` | If no current basket exists, should we create one in the database?                     | `false`      |
 | `auth_policy` | When a user logs in, how should we handle merging of the basket?                       | `merge`      |
@@ -317,9 +327,17 @@ CartSession::clear();
 You can easily associate a cart to a user.
 
 ```php
-$cart = \Lunar\Models\Cart::first();
-CartSession::associate($cart, $user, 'merge');
+CartSession::associate($user, 'merge');
 ```
+
+### Associating a cart to a customer
+
+You can easily associate a cart to a customer.
+
+```php
+CartSession::setCustomer($customer);
+```
+
 
 ### Adding shipping/billing address
 
@@ -366,3 +384,35 @@ guest and logged in, you will likely want to be able to handle this. Lunar takes
 the pain out of this by listening to the authentication events and responding
 automatically by associating any previous guest cart they may have had and,
 depending on your `auth_policy` merge or override the basket on their account.
+
+## Determining cart changes
+
+Carts by nature are dynamic, which means anything can change at any moment. This means it can be quite challenging to
+determine whether a card has changed from the one currently loaded, for example, if the user goes to check out and
+changes their cart on another tab, how does the checkout know there has been a change?
+
+To help this, a cart will have a fingerprint generated which you can check to determine whether there has been
+any changes and if so, refresh the cart.
+
+```php
+$cart->fingerprint();
+
+try {
+    $cart->checkFingerprint('4dfAW33awd');
+} catch (\Lunar\Exceptions\FingerprintMismatchException $e) {
+    //... Refresh the cart.
+}
+```
+
+### Changing the underlying class.
+
+The class which generates the fingerprint is referenced in `config/lunar/cart.php`.
+
+```php
+return [
+    // ...
+    'fingerprint_generator' => Lunar\Actions\Carts\GenerateFingerprint::class,
+];
+```
+
+In most cases you won't need to change this.

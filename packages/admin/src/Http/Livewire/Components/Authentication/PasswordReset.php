@@ -17,8 +17,8 @@ use Throwable;
 class PasswordReset extends Component
 {
     use AuthorizesRequests;
-    use PerformsRedirects;
     use Notifies;
+    use PerformsRedirects;
 
     /**
      * The staff members email address.
@@ -80,6 +80,7 @@ class PasswordReset extends Component
     {
         if (! $this->token) {
             $this->sendResetEmail();
+
             return;
         }
 

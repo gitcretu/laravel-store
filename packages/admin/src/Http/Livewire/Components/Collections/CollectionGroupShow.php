@@ -3,9 +3,9 @@
 namespace Lunar\Hub\Http\Livewire\Components\Collections;
 
 use Illuminate\Support\Arr;
-use Lunar\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Component;
+use Lunar\Facades\DB;
 use Lunar\FieldTypes\TranslatedText;
 use Lunar\Hub\Http\Livewire\Traits\MapsCollectionTree;
 use Lunar\Hub\Http\Livewire\Traits\Notifies;
@@ -16,7 +16,7 @@ use Lunar\Models\Language;
 
 class CollectionGroupShow extends Component
 {
-    use Notifies, MapsCollectionTree;
+    use MapsCollectionTree, Notifies;
 
     /**
      * The current collection group.

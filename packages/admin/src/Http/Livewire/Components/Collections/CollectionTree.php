@@ -2,15 +2,15 @@
 
 namespace Lunar\Hub\Http\Livewire\Components\Collections;
 
-use Lunar\Facades\DB;
 use Livewire\Component;
+use Lunar\Facades\DB;
 use Lunar\Hub\Http\Livewire\Traits\MapsCollectionTree;
 use Lunar\Hub\Http\Livewire\Traits\Notifies;
 use Lunar\Models\Collection;
 
 class CollectionTree extends Component
 {
-    use Notifies, MapsCollectionTree;
+    use MapsCollectionTree, Notifies;
 
     /**
      * The nodes for the tree.

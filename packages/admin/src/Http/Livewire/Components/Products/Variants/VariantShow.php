@@ -2,15 +2,15 @@
 
 namespace Lunar\Hub\Http\Livewire\Components\Products\Variants;
 
-use Lunar\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Component;
+use Livewire\FileUploadConfiguration;
 use Livewire\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
+use Lunar\Facades\DB;
 use Lunar\Hub\Http\Livewire\Traits\CanExtendValidation;
 use Lunar\Hub\Http\Livewire\Traits\HasDimensions;
 use Lunar\Hub\Http\Livewire\Traits\HasImages;
-use Livewire\FileUploadConfiguration;
 use Lunar\Hub\Http\Livewire\Traits\HasPrices;
 use Lunar\Hub\Http\Livewire\Traits\HasSlots;
 use Lunar\Hub\Http\Livewire\Traits\Notifies;
@@ -27,15 +27,15 @@ use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
 
 class VariantShow extends Component
 {
-    use WithFileUploads;
-    use Notifies;
-    use HasPrices;
-    use WithLanguages;
-    use WithAttributes;
-    use HasDimensions;
-    use HasSlots;
-    use HasImages;
     use CanExtendValidation;
+    use HasDimensions;
+    use HasImages;
+    use HasPrices;
+    use HasSlots;
+    use Notifies;
+    use WithAttributes;
+    use WithFileUploads;
+    use WithLanguages;
 
     /**
      * Instance of the parent product.
@@ -340,6 +340,7 @@ class VariantShow extends Component
     {
         DB::transaction(function () {
             $this->variant->values()->detach();
+            $this->variant->prices()->delete();
             $this->variant->forceDelete();
         });
 

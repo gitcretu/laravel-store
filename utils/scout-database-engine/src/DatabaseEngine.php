@@ -119,7 +119,10 @@ class DatabaseEngine extends Engine
         $index = $this->getIndexFromBuilder($builder);
 
         return SearchIndex::where('index', '=', $index)
-            ->whereFullText('content', $builder->query.'*', ['mode' => 'boolean']);
+            ->when(
+                $builder->query,
+                fn ($query) => $query ->whereFullText('content', $builder->query.'*', ['mode' => 'boolean'])
+            );
     }
 
     /**
@@ -168,7 +171,7 @@ class DatabaseEngine extends Engine
         )->filter(function ($model) use ($objectIds) {
             return in_array($model->getScoutKey(), $objectIds);
             // })->sortBy(function ($model) use ($objectIdPositions) {
-        //     return $objectIdPositions[$model->getScoutKey()];
+            //     return $objectIdPositions[$model->getScoutKey()];
         })->values();
     }
 

@@ -2,31 +2,27 @@
 
 namespace Lunar\Hub\Http\Livewire;
 
-use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Cache;
-use Lunar\Facades\DB;
 use Livewire\Component;
 use Lunar\DataTypes\Price;
+use Lunar\Facades\DB;
 use Lunar\Models\Currency;
 use Lunar\Models\Customer;
 use Lunar\Models\CustomerGroup;
 use Lunar\Models\Order;
 use Lunar\Models\OrderLine;
 use Lunar\Models\Product;
+use Lunar\Models\ProductVariant;
 
 class Dashboard extends Component
 {
     /**
      * The date to query from.
-     *
-     * @var string
      */
     protected string $from;
 
     /**
      * The date to query too.
-     *
-     * @var string
      */
     protected string $to;
 
@@ -143,8 +139,10 @@ class Dashboard extends Component
     public function getTopSellingProductsProperty()
     {
         $orderTable = (new Order())->getTable();
+        $orderLineTable = (new OrderLine())->getTable();
+        $variantsTable = (new ProductVariant())->getTable();
 
-        return OrderLine::with(['purchasable'])->select([
+        return OrderLine::select([
             'purchasable_type',
             'purchasable_id',
             DB::RAW('COUNT(*) as count'),
@@ -156,10 +154,12 @@ class Dashboard extends Component
         )->whereBetween("{$orderTable}.placed_at", [
             now()->parse($this->from),
             now()->parse($this->to),
-        ])->where('type', '!=', 'shipping')
-        ->groupBy('purchasable_type', 'purchasable_id')
-        ->orderBy('count', 'desc')
-        ->take(2)->get();
+        ])->join($variantsTable, function ($join) use ($variantsTable, $orderLineTable) {
+            $join->on("{$variantsTable}.id", '=', "{$orderLineTable}.purchasable_id")
+                ->where('purchasable_type', '=', ProductVariant::class);
+        })->groupBy('purchasable_type', 'purchasable_id')
+            ->orderBy('count', 'desc')
+            ->take(2)->get();
     }
 
     /**

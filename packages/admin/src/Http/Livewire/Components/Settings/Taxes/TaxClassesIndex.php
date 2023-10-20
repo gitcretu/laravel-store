@@ -2,15 +2,15 @@
 
 namespace Lunar\Hub\Http\Livewire\Components\Settings\Taxes;
 
-use Lunar\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Lunar\Facades\DB;
 use Lunar\Hub\Http\Livewire\Traits\Notifies;
 use Lunar\Models\TaxClass;
 
 class TaxClassesIndex extends Component
 {
-    use WithPagination, Notifies;
+    use Notifies, WithPagination;
 
     /**
      * The TaxClass to edit.

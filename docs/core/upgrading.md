@@ -22,7 +22,156 @@ php artisan lunar:hub:install
 
 ## Support Policy
 
-Lunar currently provides bug fixes and security updates for only the latest minor release, e.g. `0.3`. 
+Lunar currently provides bug fixes and security updates for only the latest minor release, e.g. `0.6`.
+
+## [Unreleased]
+
+### High Impact
+
+#### TaxBreakdown casting has been refactored
+
+Database columns which have `tax_breakdown` casting will now actually cast back into the `TaxBreakdown` object. This means you will need to update any storefront views or API transformers to accomodate this.
+
+Before:
+
+```php
+@foreach ($order->tax_breakdown as $tax)
+    {{ $tax->total->formatted }}
+@endforeach
+```
+
+```php
+@foreach ($order->tax_breakdown->amounts as $tax)
+    {{ $tax->price->formatted }}
+@endforeach
+```
+## 0.6
+
+### High Impact
+
+#### Search indexing refactor
+
+Search indexing has been completely re-written to be more extendable and performant. You will need to migrate
+any `Observer` classes that use the `indexer` event to the new indexer class implementation.
+
+The following methods have also been removed from the `Searchable` trait and should be migrated.
+
+- `addFilterableAttributes`
+- `addSearchableAttributes`
+- `addSortableAttributes`
+- `getObservableEvents`
+
+If you still wish to use these methods you will need to re-implement them yourself, however this is highly discouraged.
+
+See the [`Search Extending`](/core/extending/search) guide for more information about what indexer classes are and how
+to use them.
+
+#### Licensing Manager has been removed
+
+You will need ro re-run the addons discover command to update the manifest. No additional steps are required for addons.
+
+```shell
+$ php artisan lunar:addons:discover
+````
+
+## 0.5
+
+### High Impact
+
+#### `meta` field cast with `Illuminate\Database\Eloquent\Casts\AsArrayObject`
+
+All models with `meta` attribute are now cast with
+Laravel's [`AsArrayObject::class`](https://laravel.com/docs/10.x/eloquent-mutators#array-object-and-collection-casting).
+Change your code to get the value
+with `$model->meta['key'] ?? 'default'` instead of `$model->meta->key`, and without the need of
+`is_object/is_array` type checking.
+
+## 0.4
+
+### High Impact
+
+#### Changed Lunar Hub authorization to use `spatie/laravel-permission`
+
+Existing assigned staff permissions are migrated, this should not impact your project.
+If you have custom authorization checking using `Staff->authorize('permission')`, change it
+to `Staff->hasPermissionTo('permission')`
+
+#### ShippingManifestInterface
+
+Added `addOptions`, `getOptionUsing`, `getOption`, `getShippingOption` to ShippingManifestInterface
+
+#### MySQL 8.x Requirement
+
+With MySQL 5.7 EOL coming in October 2023 and Lunar's heavy use of JSON fields, Lunar now only supports MySQL 8.x.
+You may find your project continues to work fine in MySQL 5.7, but we advise upgrading.
+
+#### Carts
+
+- The `shippingTotal` property now includes the tax in the amount, use `shippingSubTotal` instead.
+- A new `shippingBreakdown` property has been added which will include all shipping costs and be available to pipelines.
+
+If you are modifying the shipping cost outside of your own shipping options in the shipping manifest, you should create
+a custom cart pipeline and use the shipping breakdown property as this is where the shipping total will be calculated
+from.
+
+```php
+use Lunar\Base\ValueObjects\Cart\ShippingBreakdown;
+use Lunar\Base\ValueObjects\Cart\ShippingBreakdownItem;
+
+$shippingBreakdown = $cart->shippingBreakdown ?: new ShippingBreakdown;
+
+$shippingBreakdown->items->put('ADDSHIP',
+    new ShippingBreakdownItem(
+        name: 'Additional Shipping Cost',
+        identifier: 'ADDSHIP',
+        price: new Price(123, $currency, 1),
+    )
+);
+```
+
+#### Cart/Order Relationship
+
+The relationship between a cart and an order has been changed, previously the `carts` table had an `order_id` column,
+this has been changed so the `cart_id` is now on the `orders` table.
+
+You should update any code that sets the `order_id` on a cart to `cart_id` on the order.
+
+We've also introduced the concept of `draft` and `complete` orders for carts, so you should update any code that
+references an order from a cart to the following methods:
+
+```php
+// Old
+$cart->order
+
+// New
+
+/* The order which doesn't have a `placed_at` value */
+$cart->draftOrder
+
+/* Any orders which have a `placed_at` value */
+$cart->completedOrder
+```
+
+### Changes to `CreateOrder` action
+
+The `Lunar\Actions\Cart\CreateOrder` action has been refactored to run through pipelines, much like how carts are
+currently calculated. If you are currently using your own `CreateOrder` action, you should refactor the logic into
+pipelines and ues the provided action.
+
+:::danger
+The `CreateOrder` class is now final, so if you are extending this action you will need to refactor your
+implementation.
+:::
+
+See [Extending Orders](/core/extending/orders)
+
+### Low impact
+
+Add the new fingerprint class reference to `config/lunar/carts.php` if you have published the config.
+
+```php
+'fingerprint_generator' => Lunar\Actions\Carts\GenerateFingerprint::class,
+```
 
 ## 0.3
 
@@ -46,7 +195,8 @@ If you were using `db_date` helper function, you will now need to wrap it with `
 
 ### Low Impact
 
-If you have a custom DiscountType, you should update the `save` method to expect the recently saved discount id to be passed.
+If you have a custom DiscountType, you should update the `save` method to expect the recently saved discount id to be
+passed.
 
 ```php
 // Before
@@ -101,7 +251,8 @@ All publishing commands for Lunar now use `.` as a separator.
 
 #### Brand requirement is now configurable.
 
-Whether the product brand is required on your store is now configurable, the default behaviour is set to `true`. If you wish to change this, simply update `config/lunar-hub/products.php`.
+Whether the product brand is required on your store is now configurable, the default behaviour is set to `true`. If you
+wish to change this, simply update `config/lunar-hub/products.php`.
 
 ```php
 'require_brand' => false,
@@ -209,7 +360,6 @@ php artisan lunar:migrate:getcandy
 - Copy across the data from the old `getcandy_` tables into the new `lunar_` tables.
 - Update any polymorphic `GetCandy` classes to the `Lunar` namespace.
 - Update field types in `attribute_data` to the `Lunar` namespace.
-
 
 #### What this command will not do
 

@@ -2,7 +2,6 @@
 
 namespace Lunar\Hub\Http\Livewire\Components\Discounts;
 
-use Illuminate\Routing\Redirector;
 use Lunar\Facades\DB;
 use Lunar\Models\Discount;
 
@@ -37,6 +36,8 @@ class DiscountShow extends AbstractDiscount
             'discount.data' => 'array',
             'selectedCollections' => 'array',
             'selectedBrands' => 'array',
+            'selectedProducts' => 'array',
+            'selectedProductVariants' => 'array',
         ], $this->getDiscountComponent()->rules());
 
         foreach ($this->currencies as $currency) {

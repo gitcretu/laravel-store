@@ -7,7 +7,6 @@ use Lunar\Base\ValueObjects\Cart\DiscountBreakdownLine;
 use Lunar\DataTypes\Price;
 use Lunar\Models\Cart;
 use Lunar\Models\CartLine;
-use Lunar\Models\Discount;
 use Lunar\Models\Product;
 
 class BuyXGetY extends AbstractDiscountType
@@ -31,13 +30,13 @@ class BuyXGetY extends AbstractDiscountType
      */
     public function getRewardQuantity($linesQuantity, $minQty, $rewardQty, $maxRewardQty = null)
     {
-        $result = ($linesQuantity / ($minQty ?: 1)) * $rewardQty;
-
-        if ($maxRewardQty && $result > $maxRewardQty) {
-            return $maxRewardQty;
+        if ($linesQuantity < $minQty) {
+            return 0;
         }
 
-        return $result;
+        $result = floor(($linesQuantity / ($minQty ?: 1)) * $rewardQty);
+
+        return $maxRewardQty ? min($result, $maxRewardQty) : $result;
     }
 
     /**

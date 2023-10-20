@@ -2,9 +2,9 @@
 
 namespace Lunar\Hub\Http\Livewire\Components\Settings\Taxes;
 
-use Lunar\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Lunar\Facades\DB;
 use Lunar\Hub\Http\Livewire\Traits\Notifies;
 use Lunar\Models\Country;
 use Lunar\Models\CustomerGroup;
@@ -16,7 +16,7 @@ use Lunar\Models\TaxZone;
 
 abstract class AbstractTaxZone extends Component
 {
-    use WithPagination, Notifies;
+    use Notifies, WithPagination;
 
     /**
      * The instance of the Tax Zone.

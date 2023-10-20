@@ -29,10 +29,10 @@ use Lunar\Database\Factories\DiscountFactory;
  */
 class Discount extends BaseModel
 {
-    use HasFactory,
-        HasTranslations,
-        HasChannels,
-        HasCustomerGroups;
+    use HasChannels,
+        HasCustomerGroups,
+        HasFactory,
+        HasTranslations;
 
     protected $guarded = [];
 
@@ -141,7 +141,7 @@ class Discount extends BaseModel
     /**
      * Return the active scope.
      *
-     * @return void
+     * @return Builder
      */
     public function scopeActive(Builder $query)
     {
@@ -151,5 +151,61 @@ class Discount extends BaseModel
                 $query->whereNull('ends_at')
                     ->orWhere('ends_at', '>', now());
             });
+    }
+
+    /**
+     * Return the products scope.
+     *
+     * @return Builder
+     */
+    public function scopeProducts(Builder $query, iterable $productIds = [], string $type = null)
+    {
+        if (is_array($productIds)) {
+            $productIds = collect($productIds);
+        }
+
+        return $query->where(
+            fn ($subQuery) => $subQuery->whereDoesntHave('purchasables')
+                ->orWhereHas('purchasables',
+                    fn ($relation) => $relation->whereIn('purchasable_id', $productIds)
+                        ->wherePurchasableType(Product::class)
+                        ->when(
+                            $type,
+                            fn ($query) => $query->whereType($type)
+                        )
+                )
+        );
+    }
+    
+    /**
+     * Return the product variants scope.
+     *
+     * @return Builder
+     */
+    public function scopeProductVariants(Builder $query, iterable $variantIds = [], string $type = null)
+    {
+        if (is_array($variantIds)) {
+            $variantIds = collect($variantIds);
+        }
+
+        return $query->where(
+            fn ($subQuery) => $subQuery->whereDoesntHave('purchasables')
+                ->orWhereHas('purchasables',
+                    fn ($relation) => $relation->whereIn('purchasable_id', $variantIds)
+                        ->wherePurchasableType(ProductVariant::class)
+                        ->when(
+                            $type,
+                            fn ($query) => $query->whereType($type)
+                        )
+                )
+        );
+    }
+
+    public function scopeUsable(Builder $query)
+    {
+        return $query->where(function ($subQuery) {
+            $subQuery->whereRaw('uses < max_uses')
+                ->orWhereNull('max_uses');
+        });
     }
 }

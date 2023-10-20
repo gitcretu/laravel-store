@@ -2,6 +2,7 @@
 
 namespace Lunar\Models;
 
+use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Lunar\Base\Addressable;
 use Lunar\Base\BaseModel;
@@ -36,9 +37,9 @@ use Lunar\Database\Factories\OrderAddressFactory;
 class OrderAddress extends BaseModel implements Addressable
 {
     use HasFactory;
-    use LogsActivity;
-    use HasPersonalDetails;
     use HasMacros;
+    use HasPersonalDetails;
+    use LogsActivity;
 
     /**
      * Return a new factory instance for the model.
@@ -55,6 +56,7 @@ class OrderAddress extends BaseModel implements Addressable
      * @var array
      */
     protected $fillable = [
+        'order_id',
         'country_id',
         'title',
         'first_name',
@@ -79,7 +81,7 @@ class OrderAddress extends BaseModel implements Addressable
      * @var array
      */
     protected $casts = [
-        'meta' => 'object',
+        'meta' => AsArrayObject::class,
     ];
 
     /**

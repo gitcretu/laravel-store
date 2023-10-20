@@ -5,12 +5,11 @@ namespace Lunar\Hub\Http\Livewire\Components\Discounts;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Lunar\Facades\DB;
 use Illuminate\Validation\Validator;
 use Livewire\Component;
+use Lunar\Facades\DB;
 use Lunar\Facades\Discounts;
 use Lunar\Hub\Base\DiscountTypesInterface;
-use Lunar\Hub\Editing\DiscountTypes;
 use Lunar\Hub\Http\Livewire\Traits\HasAvailability;
 use Lunar\Hub\Http\Livewire\Traits\Notifies;
 use Lunar\Hub\Http\Livewire\Traits\WithLanguages;
@@ -19,12 +18,13 @@ use Lunar\Models\Collection as ModelsCollection;
 use Lunar\Models\Currency;
 use Lunar\Models\Discount;
 use Lunar\Models\Product;
+use Lunar\Models\ProductVariant;
 
 abstract class AbstractDiscount extends Component
 {
-    use WithLanguages;
-    use Notifies;
     use HasAvailability;
+    use Notifies;
+    use WithLanguages;
 
     /**
      * The instance of the discount.
@@ -51,6 +51,13 @@ abstract class AbstractDiscount extends Component
      * @var array
      */
     public Collection $selectedProducts;
+    
+    /**
+     * The product variants to restrict the coupon for.
+     *
+     * @var array
+     */
+    public Collection $selectedProductVariants;
 
     /**
      * The selected conditions
@@ -103,6 +110,7 @@ abstract class AbstractDiscount extends Component
         'brandSearch.selected' => 'selectBrands',
         'collectionSearch.selected' => 'selectCollections',
         'productSearch.selected' => 'selectProducts',
+        'productVariantSearch.selected' => 'selectProductVariants',
     ];
 
     public function mount()
@@ -116,6 +124,13 @@ abstract class AbstractDiscount extends Component
             ->get()
             ->map(function ($limitation) {
                 return $this->mapProductToArray($limitation->purchasable);
+            });
+            
+        $this->selectedProductVariants = $this->discount->purchasableLimitations()
+            ->wherePurchasableType(ProductVariant::class)
+            ->get()
+            ->map(function ($limitation) {
+                return $this->mapProductVariantToArray($limitation->purchasable);
             });
 
         $this->selectedConditions = $this->discount->purchasableConditions()
@@ -234,6 +249,20 @@ abstract class AbstractDiscount extends Component
             ? $this->selectedProducts->merge($selectedProducts)
             : $selectedProducts;
     }
+    
+    /**
+     * Select product variants given an array of IDs
+     *
+     * @return void
+     */
+    public function selectProductVariants(array $ids)
+    {
+        $selectedVariants = ProductVariant::findMany($ids)->map(fn ($variant) => $this->mapProductVariantToArray($variant));
+
+        $this->selectedProductVariants = $this->selectedProductVariants->count()
+            ? $this->selectedProductVariants->merge($selectedVariants)
+            : $selectedVariants;
+    }
 
     public function syncRewards(array $ids)
     {
@@ -307,6 +336,17 @@ abstract class AbstractDiscount extends Component
     {
         $this->selectedProducts->forget($index);
     }
+    
+    /**
+     * Remove the product variant by it's index.
+     *
+     * @param  int|string  $index
+     * @return void
+     */
+    public function removeProductVariant($index)
+    {
+        $this->selectedProductVariants->forget($index);
+    }
 
     /**
      * Save the discount.
@@ -368,6 +408,7 @@ abstract class AbstractDiscount extends Component
             );
 
             $this->discount->purchasableLimitations()
+                ->where('purchasable_type', Product::class)
                 ->whereNotIn('purchasable_id', $this->selectedProducts->pluck('id'))
                 ->delete();
 
@@ -377,6 +418,20 @@ abstract class AbstractDiscount extends Component
                     'type' => 'limitation',
                     'purchasable_type' => Product::class,
                     'purchasable_id' => $product['id'],
+                ]);
+            }
+            
+            $this->discount->purchasableLimitations()
+                ->where('purchasable_type', ProductVariant::class)
+                ->whereNotIn('purchasable_id', $this->selectedProductVariants->pluck('id'))
+                ->delete();
+
+            foreach ($this->selectedProductVariants as $variant) {
+                $this->discount->purchasableLimitations()->firstOrCreate([
+                    'discount_id' => $this->discount->id,
+                    'type' => 'limitation',
+                    'purchasable_type' => ProductVariant::class,
+                    'purchasable_id' => $variant['id'],
                 ]);
             }
         });
@@ -488,6 +543,21 @@ abstract class AbstractDiscount extends Component
             'id' => $product->id,
             'name' => $product->translateAttribute('name'),
             'thumbnail' => optional($product->thumbnail)->getUrl('small'),
+        ];
+    }
+    
+    /**
+     * Return the data we need from a product variant
+     *
+     * @return array
+     */
+    private function mapProductVariantToArray($variant)
+    {
+        return [
+            'id' => $variant->id,
+            'name' => $variant->sku,
+            'product' => $variant->product->id,
+            'thumbnail' => optional($variant->getThumbnail())->getUrl('small'),
         ];
     }
 }

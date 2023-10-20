@@ -16,6 +16,44 @@ command below.
 php artisan vendor:publish --tag=lunar.hub.views
 ```
 
+## Staff Permissions
+
+You can add additional permissions to authorise staff access. It will be shown in staff management screens for assign/revoke.
+
+Here is an example of how you would add a permission in ServiceProvider
+
+```php
+
+use Lunar\Hub\Auth\Manifest;
+use Lunar\Hub\Auth\Permission;
+
+public function boot()
+{
+    // ...
+    $manifest = $this->app->get(Manifest::class);
+    
+    $manifest->addPermission(function (Permission $permission) {
+        $permission->name = 'Permission name';
+        $permission->handle = 'permission-handle'; // or 'group:handle to group permissions 
+        $permission->description = 'Permission description';
+    });
+    // ...
+}
+```
+
+::: tip
+After adding new permissions, you must run `lunar:hub:permissions` command to register into the hub.
+The hub is using `spatie/laravel-permission` package
+:::
+
+::: warning 
+Additional permissions are catogarised as third-party permissions. You should still implement authorisation checking respectively.
+
+Example:
+`middleware` 'can:permission-handle'
+`in-code` Auth::user()->can('permission-handle')
+:::
+
 ## Adding to Menus
 
 Lunar uses dynamic menus in the UI which you can extend to add further links.
@@ -87,19 +125,36 @@ $productsSection->addItem(function ($item) {
 });
 ```
 
+### Menu authorization
+
+You can also authorize the staff access using the `gate` method.
+
+```php
+$productsSection->addItem(function ($item) {
+    $item
+        ->name(__('menu.sidebar.tickets'))
+        ->handle('hub.tickets')
+        ->route('hub.tickets.index')
+        ->gate('view-tickets')
+        ->icon('ticket');
+});
+```
+
 ### Adding an Icon
 
 Lunar comes with a collection of icons you can use in the Resources folder. If
 you wish to supply your own, simply use an SVG instead, e.g.
 
 ```php
-->icon('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="1.5" stroke="#9A9AA9" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <line x1="15" y1="5" x2="15" y2="7" />
-  <line x1="15" y1="11" x2="15" y2="13" />
-  <line x1="15" y1="17" x2="15" y2="19" />
-  <path d="M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-3a2 2 0 0 0 0 -4v-3a2 2 0 0 1 2 -2" />
-</svg>');
+->icon(<<<HTML
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="1.5" stroke="#9A9AA9" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+        <line x1="15" y1="5" x2="15" y2="7" />
+        <line x1="15" y1="11" x2="15" y2="13" />
+        <line x1="15" y1="17" x2="15" y2="19" />
+        <path d="M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-3a2 2 0 0 0 0 -4v-3a2 2 0 0 1 2 -2" />
+    </svg>
+HTML);
 ```
 
 ## Slots

@@ -3,8 +3,8 @@
 namespace Lunar\Console;
 
 use Illuminate\Console\Command;
-use Lunar\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Lunar\Facades\DB;
 use Lunar\FieldTypes\TranslatedText;
 use Lunar\Hub\AdminHubServiceProvider;
 use Lunar\Models\Attribute;
@@ -248,7 +248,7 @@ class InstallLunar extends Command
         $this->newLine();
 
         $this->line('Please show some love for Lunar by giving us a star on GitHub ⭐️');
-        $this->info('https://github.com/lunarphp/lunar️');
+        $this->info('https://github.com/lunarphp/lunar');
         $this->newLine(3);
     }
 

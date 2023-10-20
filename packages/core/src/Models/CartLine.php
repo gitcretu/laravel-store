@@ -2,6 +2,7 @@
 
 namespace Lunar\Models;
 
+use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Lunar\Base\BaseModel;
 use Lunar\Base\Traits\CachesProperties;
@@ -23,10 +24,10 @@ use Lunar\DataTypes\Price;
  */
 class CartLine extends BaseModel
 {
-    use HasFactory;
-    use LogsActivity;
-    use HasMacros;
     use CachesProperties;
+    use HasFactory;
+    use HasMacros;
+    use LogsActivity;
 
     /**
      * Array of cachable class properties.
@@ -106,7 +107,7 @@ class CartLine extends BaseModel
      */
     protected $casts = [
         'quantity' => 'integer',
-        'meta' => 'object',
+        'meta' => AsArrayObject::class,
     ];
 
     /**

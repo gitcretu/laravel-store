@@ -37,6 +37,28 @@ class HasCustomerGroupsTest extends TestCase
     }
 
     /** @test */
+    public function can_schedule_always_available()
+    {
+        $product = Product::factory()->create();
+
+        $customerGroup = CustomerGroup::factory()->create();
+
+        $product->scheduleCustomerGroup($customerGroup);
+
+        $this->assertDatabaseHas(
+            'lunar_customer_group_product',
+            [
+                'customer_group_id' => $customerGroup->id,
+                'enabled' => 1,
+                'visible' => 1,
+                'purchasable' => 1,
+                'starts_at' => null,
+                'ends_at' => null,
+            ],
+        );
+    }
+
+    /** @test */
     public function can_schedule_using_array_of_models()
     {
         $product = Product::factory()->create();
@@ -142,7 +164,6 @@ class HasCustomerGroupsTest extends TestCase
         }
     }
 
-
     /** @test */
     public function can_scope_results_to_a_customer_group()
     {
@@ -181,10 +202,16 @@ class HasCustomerGroupsTest extends TestCase
         $resultA = Product::customerGroup($groupA)->get();
         $resultB = Product::customerGroup($groupB)->get();
         $resultC = Product::customerGroup([$groupA, $groupB])->get();
+        $resultD = Product::customerGroup()->get();
+        $resultE = Product::customerGroup([])->get();
+        $resultF = Product::customerGroup(collect())->get();
 
         $this->assertCount(1, $resultA);
         $this->assertCount(1, $resultB);
         $this->assertCount(2, $resultC);
+        $this->assertCount(2, $resultD);
+        $this->assertCount(2, $resultE);
+        $this->assertCount(2, $resultF);
 
         $this->assertEquals($productA->id, $resultA->first()->id);
         $this->assertEquals($productB->id, $resultB->first()->id);
@@ -192,6 +219,7 @@ class HasCustomerGroupsTest extends TestCase
         $productA->customerGroups()->syncWithPivotValues([$groupA->id], [
             'starts_at' => now(),
             'enabled' => false,
+            'visible' => false,
             'ends_at' => now()->addDay(),
         ]);
 
