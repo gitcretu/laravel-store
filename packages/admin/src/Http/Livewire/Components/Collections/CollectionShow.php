@@ -419,7 +419,10 @@ class CollectionShow extends Component
                 return $price->currency_id == $this->defaultCurrency->id;
             });
         })->flatten()->first();
-
+        if($basePrice == null) {
+            dd($product->variants);
+        }
+        
         return [
             'id' => $product->id,
             'sort_key' => Str::random(),
@@ -430,7 +433,7 @@ class CollectionShow extends Component
             'sku' => $product->variants->map(function ($variant) {
                 return $variant->sku;
             })->join(','),
-            'base_price' => $basePrice->load('currency')->formatted,
+            'base_price' => $basePrice != null ? $basePrice->load('currency')->formatted : '',
         ];
     }
 
